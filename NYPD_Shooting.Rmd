@@ -1,0 +1,187 @@
+---
+title: "NYPD Shooting Analysis"
+author: "P. Chang"
+date: "`r Sys.Date()`"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## About
+
+Gun violence has become a huge problem in America today. In this report, we will be analyzing the statistical murders from shooting incidents in New York areas using data from NYPD City data. This data is the record of every shooting that as occurred in NYC since 2006 and updated to the previous calendar year. We will explore the relationship between age, time of day, day of week, age, sex, race and create conclusions based on data visualized and modeled. This analysis will be split into multiple sections:
+
+1. Data Exploration
+2. Data Visualization
+3. Data Modeling
+
+url for dataset: "https://data.cityofnewyork.us/api/views/833y-fsy8/rows.csv?accessType=DOWNLOAD"
+
+### Imports
+
+``` {r}
+library(tidyverse)
+library(lubridate)
+library(dplyr)
+library(ggcorrplot)
+```
+
+## Data Exploration
+
+### Reading Data
+
+``` {r}
+#read csv into variable
+url_in = "https://data.cityofnewyork.us/api/views/833y-fsy8/rows.csv?accessType=DOWNLOAD"
+NYPD_data = read_csv(url_in)
+
+#show first 5 rows of dataset
+head(NYPD_data,5)
+```
+
+### Dropping Columns
+
+First and formost, we will include the columns used in our analysis and drop any columns that have no logical correlation to incidents occuring.
+
+Columns we can keep:
+
+* OCCUR_DATE
+* OCCUR_TIME
+* STATISTICAL_MURDER_FLAG
+* PERP_AGE_GROUP
+* PERP_SEX
+* PERP_RACE
+* VIC_AGE_GROUP
+* VIC_SEX
+* VIC_RACE
+
+``` {r}
+#We will only select the following columns from above
+cols = c("OCCUR_DATE","OCCUR_TIME","STATISTICAL_MURDER_FLAG","PERP_AGE_GROUP","PERP_SEX","PERP_RACE","VIC_AGE_GROUP","VIC_SEX","VIC_RACE")
+NYPD_data = NYPD_data %>%
+  select(cols)
+           
+```
+
+### Missing Data Treatment
+
+``` {r}
+for (col in cols){
+  print(col)
+  print(sum(is.na(NYPD_data[col])))
+}           
+```
+
+There are some values for PERP_AGE_GROUP, PERP_SEX, and PERP_RACE we do not know. We need to either impute data or remove these columns altogether. We can impute the values as Unknown.
+
+``` {r}
+NYPD_data = NYPD_data %>%  replace_na(list(PERP_AGE_GROUP = "UNKNOWN", PERP_SEX = "UNKNOWN", PERP_RACE = "UNKNOWN"))%>% mutate(OCCUR_DATE = mdy(OCCUR_DATE))
+head(NYPD_data)
+```
+
+``` {r}
+NYPD_data = NYPD_data %>%  replace_na(list(PERP_AGE_GROUP = "UNKNOWN", PERP_SEX = "UNKNOWN", PERP_RACE = "UNKNOWN"))
+head(NYPD_data)
+```
+
+### Summary of Data
+``` {r}
+NYPD_data["PERP_AGE_GROUP"] = as.factor(NYPD_data$PERP_AGE_GROUP)
+NYPD_data["PERP_SEX"] = as.factor(NYPD_data$PERP_SEX)
+NYPD_data["PERP_RACE"] = as.factor(NYPD_data$PERP_RACE)
+NYPD_data["VIC_AGE_GROUP"] = as.factor(NYPD_data$VIC_AGE_GROUP)
+NYPD_data["VIC_SEX"] = as.factor(NYPD_data$VIC_SEX)
+NYPD_data["VIC_RACE"] = as.factor(NYPD_data$VIC_RACE)
+summary(NYPD_data)
+```
+
+### Visualizing the Data
+
+We will visualize the univariate relationship in the data.
+
+``` {r}
+#Categorical variable
+cat_cols = c("STATISTICAL_MURDER_FLAG","PERP_AGE_GROUP","PERP_SEX","PERP_RACE","VIC_AGE_GROUP","VIC_SEX","VIC_RACE")
+
+perp_age_plot = ggplot(data = NYPD_data, aes(x = STATISTICAL_MURDER_FLAG)) + geom_bar() + labs(x = "Statistical Murder", y = "Count") + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+print(perp_age_plot)
+
+perp_age_plot = ggplot(data = NYPD_data, aes(x = PERP_AGE_GROUP)) + geom_bar() + labs(x = "Age", y = "Count")+ theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+print(perp_age_plot)
+
+perp_age_plot = ggplot(data = NYPD_data, aes(x = PERP_SEX)) + geom_bar() + labs(x = "Sex", y = "Count")+ theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+print(perp_age_plot)
+
+perp_age_plot = ggplot(data = NYPD_data, aes(x = PERP_RACE)) + geom_bar() + labs(x = "Race", y = "Count")+ theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+print(perp_age_plot)
+
+perp_age_plot = ggplot(data = NYPD_data, aes(x = VIC_AGE_GROUP)) + geom_bar() + labs(x = "Age", y = "Count")+ theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+print(perp_age_plot)
+
+perp_age_plot = ggplot(data = NYPD_data, aes(x = VIC_SEX)) + geom_bar() + labs(x = "Sex", y = "Count")+ theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+print(perp_age_plot)
+
+perp_age_plot = ggplot(data = NYPD_data, aes(x = VIC_RACE)) + geom_bar() + labs(x = "Race", y = "Count")+ theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+print(perp_age_plot)
+
+
+```
+
+
+
+``` {r}
+#Categorical variable
+cat_cols = c("STATISTICAL_MURDER_FLAG","PERP_AGE_GROUP","PERP_SEX","PERP_RACE","VIC_AGE_GROUP","VIC_SEX","VIC_RACE")
+
+perp_date_plot = ggplot(data = NYPD_data, aes(x = OCCUR_DATE)) + geom_freqpoly()
+print(perp_date_plot)
+
+
+
+occur_time = data.frame(HOUR = hour(hms(as.character(NYPD_data$OCCUR_TIME))), DAY = wday(NYPD_data$OCCUR_DATE, label = TRUE))
+
+NYPD_data["HOUR"] = hour(hms(as.character(NYPD_data$OCCUR_TIME)))
+NYPD_data["DAY"] = wday(NYPD_data$OCCUR_DATE, label = TRUE)
+perp_hour_plot = ggplot(data = NYPD_data, aes(x = HOUR)) + geom_freqpoly()
+print(perp_hour_plot)
+perp_day_plot = ggplot(data = NYPD_data, aes(x = DAY)) + geom_bar()
+print(perp_day_plot)
+
+
+```
+
+
+``` {r}
+
+sample = sample(c(TRUE, FALSE), nrow(NYPD_data), replace=TRUE, prob=c(0.7,0.3))
+train = NYPD_data[sample,]
+test = NYPD_data[!sample,]
+
+log_model = glm(formula = STATISTICAL_MURDER_FLAG ~ PERP_AGE_GROUP + PERP_SEX + PERP_RACE + VIC_AGE_GROUP + VIC_SEX + VIC_RACE + HOUR + DAY,data = train, family = binomial)
+
+
+```
+
+
+
+``` {r}
+
+summary(log_model)
+
+```
+
+
+## Conclusion
+
+From looking at the z - scores as from the summary model, Some of the significant traits that affected the statistical murders are: Perpetrator ages from under 18 and ages between 18 - 24, Native American race, and victims of all race. The time in hours is slightly signicant as well as victim gender. From this analysis we can conclude the factors that affect statisticals murders. However, when completing this report, these factors do not indicate the statistical murders themselves, but how decisions are made to label incidents as statistical murders. I wonder how this labeling is initially analyzed and what factor was used to know what is a statistical murder to begin in the first place.
+
+
+
+
+
+
